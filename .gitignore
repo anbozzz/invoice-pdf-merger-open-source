@@ -1,0 +1,22 @@
+.DS_Store
+
+# macOS Swift build output
+macos/.build/
+macos/build/
+macos/dist/
+macos/DerivedData/
+
+# Windows / Electron build output
+windows/node_modules/
+windows/dist/
+windows/out/
+windows/test-output/
+
+# Logs and local env
+*.log
+.env
+.env.*
+
+# Local editor files
+.idea/
+.vscode/

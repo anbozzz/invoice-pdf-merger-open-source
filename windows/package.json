@@ -1,0 +1,53 @@
+{
+  "name": "invoice-pdf-merger-windows",
+  "version": "1.0.0",
+  "description": "发票 PDF 合并工具 Windows 版",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/core.test.js",
+    "build:win": "electron-builder --win nsis --x64"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "imapflow": "^1.0.194",
+    "mailparser": "^3.7.4",
+    "pdf-lib": "^1.17.1",
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.local.invoice-pdf-merger",
+    "productName": "发票PDF合并",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "build/icon.ico",
+      "build/icon.png"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "发票PDF合并"
+    }
+  }
+}

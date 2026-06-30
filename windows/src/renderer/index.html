@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发票PDF合并</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="toolbar">
+        <div>
+          <h1>发票 PDF 合并</h1>
+          <p>导入本地 PDF，或从 QQ 邮箱拉取发票附件后合并。</p>
+        </div>
+        <div class="toolbar-actions">
+          <button id="mailImportButton">QQ邮箱导入</button>
+          <button id="localImportButton">导入 PDF</button>
+          <button id="clearButton" class="secondary">清空</button>
+        </div>
+      </header>
+
+      <section id="dropZone" class="drop-zone">
+        <div class="empty-state">
+          <div class="empty-icon">PDF</div>
+          <strong>点击导入，或把 PDF 文件拖到这里</strong>
+          <span>文件仅在本机处理，不会上传。</span>
+        </div>
+        <table id="fileTable" class="file-table hidden">
+          <thead>
+            <tr>
+              <th>文件</th>
+              <th>页数</th>
+              <th>大小</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="fileTableBody"></tbody>
+        </table>
+      </section>
+
+      <footer class="footer">
+        <span id="summaryText">0 个文件，0 页</span>
+        <div class="footer-actions">
+          <button id="previewButton" class="secondary">预览</button>
+          <button id="moveUpButton" class="secondary">上移</button>
+          <button id="moveDownButton" class="secondary">下移</button>
+          <button id="removeButton" class="secondary">删除</button>
+          <button id="mergeButton">合并并保存</button>
+        </div>
+      </footer>
+    </main>
+
+    <dialog id="mailDialog" class="mail-dialog">
+      <form method="dialog" class="dialog-panel">
+        <h2>从 QQ 邮箱导入发票</h2>
+        <p>请使用 QQ 邮箱开启 IMAP 后生成的授权码，不要填写 QQ 登录密码。</p>
+        <label>
+          邮箱地址
+          <input id="emailInput" type="email" placeholder="例如 name@qq.com">
+        </label>
+        <label>
+          授权码
+          <input id="authCodeInput" type="password" placeholder="QQ 邮箱授权码">
+        </label>
+        <label>
+          邮件时间
+          <input id="daysInput" type="number" min="1" max="30" value="3">
+        </label>
+        <label class="checkbox">
+          <input id="skipTravelInput" type="checkbox" checked>
+          剔除滴滴、网约车行程单
+        </label>
+        <p id="mailStatus" class="status-text">默认下载近 3 日邮件中的 PDF 和 ZIP 附件。</p>
+        <div class="dialog-actions">
+          <button id="clearCredentialButton" type="button" class="secondary">清除记忆</button>
+          <span></span>
+          <button value="cancel" class="secondary">取消</button>
+          <button id="startMailImportButton" type="button">开始下载</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="previewDialog" class="preview-dialog">
+      <div class="preview-header">
+        <div>
+          <strong id="previewTitle"></strong>
+          <span id="previewMeta"></span>
+        </div>
+        <button id="closePreviewButton" class="icon-button">×</button>
+      </div>
+      <iframe id="previewFrame" title="PDF 预览"></iframe>
+    </dialog>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>
