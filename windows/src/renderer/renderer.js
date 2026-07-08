@@ -4,6 +4,37 @@ const state = {
   unsubscribeProgress: null
 };
 
+const mailProviders = {
+  qq: {
+    name: "QQ 邮箱",
+    host: "imap.qq.com",
+    emailPlaceholder: "例如 name@qq.com",
+    authPlaceholder: "QQ 邮箱授权码",
+    helpText: "请使用 QQ 邮箱开启 IMAP 后生成的授权码，不要填写 QQ 登录密码。"
+  },
+  netease163: {
+    name: "网易 163 邮箱",
+    host: "imap.163.com",
+    emailPlaceholder: "例如 name@163.com",
+    authPlaceholder: "网易邮箱授权码",
+    helpText: "请在网易邮箱开启 IMAP/SMTP 服务后使用客户端授权码，不要填写邮箱登录密码。"
+  },
+  netease126: {
+    name: "网易 126 邮箱",
+    host: "imap.126.com",
+    emailPlaceholder: "例如 name@126.com",
+    authPlaceholder: "网易邮箱授权码",
+    helpText: "请在网易邮箱开启 IMAP/SMTP 服务后使用客户端授权码，不要填写邮箱登录密码。"
+  },
+  neteaseYeah: {
+    name: "网易 yeah.net 邮箱",
+    host: "imap.yeah.net",
+    emailPlaceholder: "例如 name@yeah.net",
+    authPlaceholder: "网易邮箱授权码",
+    helpText: "请在网易邮箱开启 IMAP/SMTP 服务后使用客户端授权码，不要填写邮箱登录密码。"
+  }
+};
+
 const elements = {
   dropZone: document.getElementById("dropZone"),
   emptyState: document.querySelector(".empty-state"),
@@ -19,6 +50,8 @@ const elements = {
   removeButton: document.getElementById("removeButton"),
   mergeButton: document.getElementById("mergeButton"),
   mailDialog: document.getElementById("mailDialog"),
+  providerSelect: document.getElementById("providerSelect"),
+  providerHelpText: document.getElementById("providerHelpText"),
   emailInput: document.getElementById("emailInput"),
   authCodeInput: document.getElementById("authCodeInput"),
   daysInput: document.getElementById("daysInput"),
@@ -32,6 +65,17 @@ const elements = {
   previewFrame: document.getElementById("previewFrame"),
   closePreviewButton: document.getElementById("closePreviewButton")
 };
+
+function currentProvider() {
+  return mailProviders[elements.providerSelect.value] || mailProviders.qq;
+}
+
+function updateProviderText() {
+  const provider = currentProvider();
+  elements.providerHelpText.textContent = provider.helpText;
+  elements.emailInput.placeholder = provider.emailPlaceholder;
+  elements.authCodeInput.placeholder = provider.authPlaceholder;
+}
 
 function formatBytes(size) {
   if (!Number.isFinite(size)) {
@@ -151,6 +195,8 @@ async function importDroppedFiles(files) {
 
 async function openMailDialog() {
   const credentials = await window.invoiceApp.getCredentials();
+  elements.providerSelect.value = credentials.providerId || "qq";
+  updateProviderText();
   elements.emailInput.value = credentials.emailAddress || "";
   elements.authCodeInput.value = credentials.authCode || "";
   elements.daysInput.value = "3";
@@ -161,7 +207,8 @@ async function openMailDialog() {
 
 async function startMailImport() {
   elements.startMailImportButton.disabled = true;
-  elements.mailStatus.textContent = "正在连接 QQ 邮箱...";
+  const provider = currentProvider();
+  elements.mailStatus.textContent = `正在连接 ${provider.name}...`;
 
   if (state.unsubscribeProgress) {
     state.unsubscribeProgress();
@@ -172,6 +219,7 @@ async function startMailImport() {
 
   try {
     const result = await window.invoiceApp.importMail({
+      providerId: elements.providerSelect.value,
       emailAddress: elements.emailInput.value.trim(),
       authCode: elements.authCodeInput.value,
       daysBack: Number(elements.daysInput.value || 3),
@@ -248,11 +296,19 @@ elements.moveDownButton.addEventListener("click", () => moveSelected(1));
 elements.removeButton.addEventListener("click", removeSelected);
 elements.mergeButton.addEventListener("click", mergeAndSave);
 elements.startMailImportButton.addEventListener("click", startMailImport);
+elements.providerSelect.addEventListener("change", async () => {
+  updateProviderText();
+  const credentials = await window.invoiceApp.getCredentials(elements.providerSelect.value);
+  elements.emailInput.value = credentials.emailAddress || "";
+  elements.authCodeInput.value = credentials.authCode || "";
+  elements.mailStatus.textContent = "默认下载近 3 日邮件中的 PDF 和 ZIP 附件。";
+});
 elements.clearCredentialButton.addEventListener("click", async () => {
-  await window.invoiceApp.clearCredentials();
+  const provider = currentProvider();
+  await window.invoiceApp.clearCredentials(elements.providerSelect.value);
   elements.emailInput.value = "";
   elements.authCodeInput.value = "";
-  elements.mailStatus.textContent = "已清除本机保存的 QQ 邮箱信息。";
+  elements.mailStatus.textContent = `已清除本机保存的 ${provider.name} 信息。`;
 });
 elements.closePreviewButton.addEventListener("click", () => elements.previewDialog.close());
 

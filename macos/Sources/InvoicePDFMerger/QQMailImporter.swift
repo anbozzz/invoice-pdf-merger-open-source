@@ -4,7 +4,74 @@ import Network
 import PDFKit
 import Security
 
+enum MailProvider: String, CaseIterable, Identifiable {
+    case qq
+    case netease163
+    case netease126
+    case neteaseYeah
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .qq:
+            return "QQ 邮箱"
+        case .netease163:
+            return "网易 163 邮箱"
+        case .netease126:
+            return "网易 126 邮箱"
+        case .neteaseYeah:
+            return "网易 yeah.net 邮箱"
+        }
+    }
+
+    var imapHost: String {
+        switch self {
+        case .qq:
+            return "imap.qq.com"
+        case .netease163:
+            return "imap.163.com"
+        case .netease126:
+            return "imap.126.com"
+        case .neteaseYeah:
+            return "imap.yeah.net"
+        }
+    }
+
+    var emailPlaceholder: String {
+        switch self {
+        case .qq:
+            return "例如 name@qq.com"
+        case .netease163:
+            return "例如 name@163.com"
+        case .netease126:
+            return "例如 name@126.com"
+        case .neteaseYeah:
+            return "例如 name@yeah.net"
+        }
+    }
+
+    var authCodePlaceholder: String {
+        switch self {
+        case .qq:
+            return "QQ 邮箱授权码"
+        case .netease163, .netease126, .neteaseYeah:
+            return "网易邮箱授权码"
+        }
+    }
+
+    var helpText: String {
+        switch self {
+        case .qq:
+            return "请使用 QQ 邮箱开启 IMAP 后生成的授权码，不要填写 QQ 登录密码。"
+        case .netease163, .netease126, .neteaseYeah:
+            return "请在网易邮箱开启 IMAP/SMTP 服务后使用客户端授权码，不要填写邮箱登录密码。"
+        }
+    }
+}
+
 struct QQMailImportRequest {
+    let provider: MailProvider
     let emailAddress: String
     let authCode: String
     let daysBack: Int
@@ -29,7 +96,7 @@ enum QQMailImportError: LocalizedError {
         case .connectionClosed:
             return "邮箱连接已关闭。"
         case .loginFailed(let message):
-            return "QQ 邮箱登录失败，请确认已开启 IMAP 并使用授权码。\(message)"
+            return "邮箱登录失败，请确认已开启 IMAP 并使用授权码。\(message)"
         case .imapCommandFailed(let message):
             return "邮箱命令执行失败：\(message)"
         case .zipExtractFailed(let filename):
@@ -44,9 +111,9 @@ final class QQMailImporter {
         progress: @escaping (String) -> Void
     ) async throws -> QQMailImportResult {
         let downloadDirectory = try makeDownloadDirectory()
-        let client = IMAPClient(host: "imap.qq.com", port: 993)
+        let client = IMAPClient(host: request.provider.imapHost, port: 993)
 
-        progress("正在连接 imap.qq.com...")
+        progress("正在连接 \(request.provider.imapHost)...")
         try await client.connect()
         defer {
             Task {
@@ -54,7 +121,7 @@ final class QQMailImporter {
             }
         }
 
-        progress("正在登录 QQ 邮箱...")
+        progress("正在登录 \(request.provider.displayName)...")
         try await client.login(email: request.emailAddress, authCode: request.authCode)
 
         progress("正在读取收件箱...")
@@ -745,32 +812,46 @@ enum AttachmentProcessor {
 final class QQMailCredentialStore {
     static let shared = QQMailCredentialStore()
 
-    private let service = "InvoicePDFMerger.QQMail"
+    private let servicePrefix = "InvoicePDFMerger.Mail"
     private let emailAccount = "email"
     private let authCodeAccount = "authCode"
+    private let selectedProviderKey = "InvoicePDFMerger.Mail.selectedProvider"
 
-    var emailAddress: String? {
-        read(account: emailAccount)
+    var selectedProvider: MailProvider {
+        let rawValue = UserDefaults.standard.string(forKey: selectedProviderKey) ?? MailProvider.qq.rawValue
+        return MailProvider(rawValue: rawValue) ?? .qq
     }
 
-    var authCode: String? {
-        read(account: authCodeAccount)
+    func saveSelectedProvider(_ provider: MailProvider) {
+        UserDefaults.standard.set(provider.rawValue, forKey: selectedProviderKey)
     }
 
-    func save(emailAddress: String, authCode: String) {
-        write(emailAddress, account: emailAccount)
-        write(authCode, account: authCodeAccount)
+    func emailAddress(for provider: MailProvider) -> String? {
+        read(provider: provider, account: emailAccount)
     }
 
-    func clear() {
-        delete(account: emailAccount)
-        delete(account: authCodeAccount)
+    func authCode(for provider: MailProvider) -> String? {
+        read(provider: provider, account: authCodeAccount)
     }
 
-    private func read(account: String) -> String? {
+    func save(provider: MailProvider, emailAddress: String, authCode: String) {
+        write(emailAddress, provider: provider, account: emailAccount)
+        write(authCode, provider: provider, account: authCodeAccount)
+    }
+
+    func clear(provider: MailProvider) {
+        delete(provider: provider, account: emailAccount)
+        delete(provider: provider, account: authCodeAccount)
+    }
+
+    private func service(for provider: MailProvider) -> String {
+        "\(servicePrefix).\(provider.rawValue)"
+    }
+
+    private func read(provider: MailProvider, account: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
+            kSecAttrService as String: service(for: provider),
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
@@ -784,11 +865,11 @@ final class QQMailCredentialStore {
         return String(data: data, encoding: .utf8)
     }
 
-    private func write(_ value: String, account: String) {
+    private func write(_ value: String, provider: MailProvider, account: String) {
         let data = Data(value.utf8)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
+            kSecAttrService as String: service(for: provider),
             kSecAttrAccount as String: account
         ]
 
@@ -804,10 +885,10 @@ final class QQMailCredentialStore {
         }
     }
 
-    private func delete(account: String) {
+    private func delete(provider: MailProvider, account: String) {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
+            kSecAttrService as String: service(for: provider),
             kSecAttrAccount as String: account
         ]
 

@@ -11,10 +11,10 @@
       <header class="toolbar">
         <div>
           <h1>发票 PDF 合并</h1>
-          <p>导入本地 PDF，或从 QQ 邮箱拉取发票附件后合并。</p>
+          <p>导入本地 PDF，或从邮箱拉取发票附件后合并。</p>
         </div>
         <div class="toolbar-actions">
-          <button id="mailImportButton">QQ邮箱导入</button>
+          <button id="mailImportButton">邮箱导入</button>
           <button id="localImportButton">导入 PDF</button>
           <button id="clearButton" class="secondary">清空</button>
         </div>
@@ -53,15 +53,24 @@
 
     <dialog id="mailDialog" class="mail-dialog">
       <form method="dialog" class="dialog-panel">
-        <h2>从 QQ 邮箱导入发票</h2>
-        <p>请使用 QQ 邮箱开启 IMAP 后生成的授权码，不要填写 QQ 登录密码。</p>
+        <h2>从邮箱导入发票</h2>
+        <p id="providerHelpText">请使用邮箱开启 IMAP 后生成的授权码，不要填写邮箱登录密码。</p>
+        <label>
+          邮箱类型
+          <select id="providerSelect">
+            <option value="qq">QQ 邮箱</option>
+            <option value="netease163">网易 163 邮箱</option>
+            <option value="netease126">网易 126 邮箱</option>
+            <option value="neteaseYeah">网易 yeah.net 邮箱</option>
+          </select>
+        </label>
         <label>
           邮箱地址
           <input id="emailInput" type="email" placeholder="例如 name@qq.com">
         </label>
         <label>
           授权码
-          <input id="authCodeInput" type="password" placeholder="QQ 邮箱授权码">
+          <input id="authCodeInput" type="password" placeholder="邮箱授权码">
         </label>
         <label>
           邮件时间

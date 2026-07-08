@@ -100,7 +100,7 @@ struct ContentView: View {
             Button {
                 showingMailImport = true
             } label: {
-                Label("QQ邮箱导入", systemImage: "envelope.badge")
+                Label("邮箱导入", systemImage: "envelope.badge")
             }
             .disabled(isImportingFromMail)
 

@@ -7,8 +7,9 @@ struct QQMailImportSheet: View {
     let onError: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var emailAddress = QQMailCredentialStore.shared.emailAddress ?? ""
-    @State private var authCode = QQMailCredentialStore.shared.authCode ?? ""
+    @State private var provider = QQMailCredentialStore.shared.selectedProvider
+    @State private var emailAddress = QQMailCredentialStore.shared.emailAddress(for: QQMailCredentialStore.shared.selectedProvider) ?? ""
+    @State private var authCode = QQMailCredentialStore.shared.authCode(for: QQMailCredentialStore.shared.selectedProvider) ?? ""
     @State private var daysBack = 3
     @State private var skipTravelPDF = true
     @State private var statusText = "默认下载近 3 日邮件中的 PDF 和 ZIP 附件。"
@@ -16,24 +17,35 @@ struct QQMailImportSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("从 QQ 邮箱导入发票")
+                Text("从邮箱导入发票")
                     .font(.title2)
                     .fontWeight(.semibold)
-                Text("请使用 QQ 邮箱开启 IMAP 后生成的授权码，不要填写 QQ 登录密码。")
+                Text(provider.helpText)
                     .foregroundStyle(.secondary)
             }
 
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 12) {
                 GridRow {
+                    Text("邮箱类型")
+                    Picker("邮箱类型", selection: $provider) {
+                        ForEach(MailProvider.allCases) { provider in
+                            Text(provider.displayName).tag(provider)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 320)
+                }
+
+                GridRow {
                     Text("邮箱地址")
-                    TextField("例如 name@qq.com", text: $emailAddress)
+                    TextField(provider.emailPlaceholder, text: $emailAddress)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 320)
                 }
 
                 GridRow {
                     Text("授权码")
-                    SecureField("QQ 邮箱授权码", text: $authCode)
+                    SecureField(provider.authCodePlaceholder, text: $authCode)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 320)
                 }
@@ -56,10 +68,10 @@ struct QQMailImportSheet: View {
 
             HStack {
                 Button("清除记忆") {
-                    QQMailCredentialStore.shared.clear()
+                    QQMailCredentialStore.shared.clear(provider: provider)
                     emailAddress = ""
                     authCode = ""
-                    statusText = "已清除本机保存的 QQ 邮箱信息。"
+                    statusText = "已清除本机保存的 \(provider.displayName) 信息。"
                 }
                 .disabled(isImporting)
 
@@ -86,20 +98,28 @@ struct QQMailImportSheet: View {
         }
         .padding(22)
         .frame(width: 560)
+        .onChange(of: provider) { newProvider in
+            QQMailCredentialStore.shared.saveSelectedProvider(newProvider)
+            emailAddress = QQMailCredentialStore.shared.emailAddress(for: newProvider) ?? ""
+            authCode = QQMailCredentialStore.shared.authCode(for: newProvider) ?? ""
+            statusText = "默认下载近 3 日邮件中的 PDF 和 ZIP 附件。"
+        }
     }
 
     private func importFromMail() {
         isImporting = true
-        statusText = "正在连接 QQ 邮箱..."
+        statusText = "正在连接 \(provider.displayName)..."
 
         let request = QQMailImportRequest(
+            provider: provider,
             emailAddress: emailAddress.trimmingCharacters(in: .whitespacesAndNewlines),
             authCode: authCode,
             daysBack: daysBack,
             skipTravelPDF: skipTravelPDF
         )
 
-        QQMailCredentialStore.shared.save(emailAddress: request.emailAddress, authCode: request.authCode)
+        QQMailCredentialStore.shared.saveSelectedProvider(provider)
+        QQMailCredentialStore.shared.save(provider: provider, emailAddress: request.emailAddress, authCode: request.authCode)
 
         Task {
             do {

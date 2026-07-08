@@ -10,7 +10,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -200,7 +201,8 @@ button:disabled {
   margin: 14px 0;
 }
 
-.dialog-panel input {
+.dialog-panel input,
+.dialog-panel select {
   height: 36px;
   padding: 7px 10px;
   border: 1px solid #cfd6df;

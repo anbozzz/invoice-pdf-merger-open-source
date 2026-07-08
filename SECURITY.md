@@ -2,7 +2,7 @@
 
 ## Sensitive Data
 
-Do not commit real mailbox addresses, QQ Mail authorization codes, invoices, or downloaded attachments.
+Do not commit real mailbox addresses, mail authorization codes, invoices, or downloaded attachments.
 
 The application is designed to process files locally. QQ Mail credentials are stored on the user's own computer:
 

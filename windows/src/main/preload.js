@@ -1,9 +1,9 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("invoiceApp", {
-  getCredentials: () => ipcRenderer.invoke("credentials:get"),
+  getCredentials: (providerId) => ipcRenderer.invoke("credentials:get", providerId),
   saveCredentials: (credentials) => ipcRenderer.invoke("credentials:save", credentials),
-  clearCredentials: () => ipcRenderer.invoke("credentials:clear"),
+  clearCredentials: (providerId) => ipcRenderer.invoke("credentials:clear", providerId),
   selectPdfs: () => ipcRenderer.invoke("dialog:selectPdfs"),
   saveMergedPdf: (inputPaths) => ipcRenderer.invoke("dialog:saveMergedPdf", inputPaths),
   getPdfInfo: (filePath) => ipcRenderer.invoke("pdf:info", filePath),

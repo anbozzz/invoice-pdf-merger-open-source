@@ -2,6 +2,7 @@ const path = require("path");
 const { ImapFlow } = require("imapflow");
 const { simpleParser } = require("mailparser");
 const { processAttachments } = require("./attachments");
+const { providerFor } = require("./mailProviders");
 
 function timestamp() {
   const now = new Date();
@@ -9,9 +10,10 @@ function timestamp() {
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 }
 
-async function importRecentInvoices({ emailAddress, authCode, daysBack, skipTravelPDF, downloadsDirectory, onProgress }) {
+async function importRecentInvoices({ providerId, emailAddress, authCode, daysBack, skipTravelPDF, downloadsDirectory, onProgress }) {
+  const provider = providerFor(providerId);
   const client = new ImapFlow({
-    host: "imap.qq.com",
+    host: provider.host,
     port: 993,
     secure: true,
     auth: {
@@ -25,12 +27,12 @@ async function importRecentInvoices({ emailAddress, authCode, daysBack, skipTrav
   const downloadDirectory = path.join(downloadsDirectory, "发票PDF合并", `邮箱导入-${timestamp()}`);
   const attachments = [];
 
-  onProgress?.("正在连接 imap.qq.com...");
+  onProgress?.(`正在连接 ${provider.host}...`);
   await client.connect();
 
   let lock;
   try {
-    onProgress?.("正在读取收件箱...");
+    onProgress?.(`正在登录 ${provider.name} 并读取收件箱...`);
     lock = await client.getMailboxLock("INBOX");
 
     const uids = await client.search({ since });

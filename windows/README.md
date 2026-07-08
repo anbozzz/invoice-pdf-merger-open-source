@@ -5,7 +5,7 @@
 ## 功能
 
 - 本地 PDF 导入
-- QQ 邮箱导入 PDF/ZIP 附件
+- QQ、网易 163、网易 126、网易 yeah.net 邮箱导入 PDF/ZIP 附件
 - 账号和授权码记忆
 - 12306 ZIP 自动解压并提取 PDF
 - 忽略 OFD/XML 等非 PDF 合并文件

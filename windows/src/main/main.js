@@ -64,20 +64,32 @@ function decryptedValue(value) {
   return buffer.toString("utf8");
 }
 
-ipcMain.handle("credentials:get", () => ({
-  emailAddress: store.get("qq.emailAddress", ""),
-  authCode: decryptedValue(store.get("qq.authCode", ""))
-}));
+function credentialPrefix(providerId) {
+  return `mail.${providerId || "qq"}`;
+}
+
+ipcMain.handle("credentials:get", (_event, providerId = store.get("mail.selectedProvider", "qq")) => {
+  const prefix = credentialPrefix(providerId);
+  return {
+    providerId,
+    emailAddress: store.get(`${prefix}.emailAddress`, ""),
+    authCode: decryptedValue(store.get(`${prefix}.authCode`, ""))
+  };
+});
 
 ipcMain.handle("credentials:save", (_event, credentials) => {
-  store.set("qq.emailAddress", credentials.emailAddress || "");
-  store.set("qq.authCode", encryptedValue(credentials.authCode || ""));
+  const providerId = credentials.providerId || "qq";
+  const prefix = credentialPrefix(providerId);
+  store.set("mail.selectedProvider", providerId);
+  store.set(`${prefix}.emailAddress`, credentials.emailAddress || "");
+  store.set(`${prefix}.authCode`, encryptedValue(credentials.authCode || ""));
   return true;
 });
 
-ipcMain.handle("credentials:clear", () => {
-  store.delete("qq.emailAddress");
-  store.delete("qq.authCode");
+ipcMain.handle("credentials:clear", (_event, providerId = store.get("mail.selectedProvider", "qq")) => {
+  const prefix = credentialPrefix(providerId);
+  store.delete(`${prefix}.emailAddress`);
+  store.delete(`${prefix}.authCode`);
   return true;
 });
 
@@ -114,15 +126,20 @@ ipcMain.handle("pdf:info", async (_event, filePath) => getPdfInfo(filePath));
 ipcMain.handle("pdf:fileUrl", (_event, filePath) => pathToFileURL(filePath).toString());
 
 ipcMain.handle("mail:import", async (_event, request) => {
+  const providerId = request.providerId || "qq";
+  const prefix = credentialPrefix(providerId);
   const credentials = {
+    providerId,
     emailAddress: request.emailAddress || "",
     authCode: request.authCode || ""
   };
-  store.set("qq.emailAddress", credentials.emailAddress);
-  store.set("qq.authCode", encryptedValue(credentials.authCode));
+  store.set("mail.selectedProvider", providerId);
+  store.set(`${prefix}.emailAddress`, credentials.emailAddress);
+  store.set(`${prefix}.authCode`, encryptedValue(credentials.authCode));
 
   return importRecentInvoices({
     ...request,
+    providerId,
     downloadsDirectory: app.getPath("downloads"),
     onProgress: (message) => {
       mainWindow?.webContents.send("mail:progress", message);

@@ -6,6 +6,7 @@ const { PDFDocument, StandardFonts } = require("pdf-lib");
 const { getPdfInfo, mergePdfs } = require("../src/core/pdf");
 const { processAttachments } = require("../src/core/attachments");
 const { isTravelDocument } = require("../src/core/filters");
+const { MAIL_PROVIDERS } = require("../src/core/mailProviders");
 
 async function makePdf(filePath, text, pageCount = 1) {
   const document = await PDFDocument.create();
@@ -46,6 +47,10 @@ async function run() {
   assert.strictEqual(isTravelDocument("滴滴出行行程报销单A.pdf"), true);
   assert.strictEqual(isTravelDocument("订单1128148843091564-电子普通发票(1).pdf"), false);
   assert.strictEqual(isTravelDocument("航空运输电子客票行程单.pdf"), false);
+  assert.strictEqual(MAIL_PROVIDERS.qq.host, "imap.qq.com");
+  assert.strictEqual(MAIL_PROVIDERS.netease163.host, "imap.163.com");
+  assert.strictEqual(MAIL_PROVIDERS.netease126.host, "imap.126.com");
+  assert.strictEqual(MAIL_PROVIDERS.neteaseYeah.host, "imap.yeah.net");
 
   const firstBytes = await fs.readFile(firstPdf);
   const secondBytes = await fs.readFile(secondPdf);
